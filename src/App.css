@@ -1,1 +1,43 @@
 @import "tailwindcss";
+/* GLOBAL CURSOR FIX */
+* {
+  cursor: none !important;
+}
+
+/* Prevent iframes or embeds from re-enabling system cursors */
+iframe,
+embed,
+object {
+  pointer-events: none;
+}
+
+/* Optional smoother transitions for interactive elements */
+a,
+button {
+  transition: all 0.3s ease;
+}
+
+/* Example button hover color */
+button:hover,
+a:hover {
+  opacity: 0.9;
+}
+
+/* Make sure background scroll is smooth */
+html {
+  scroll-behavior: smooth;
+}
+
+/* For dark mode backgrounds */
+body {
+  background-color: #1a1a1a;
+  color: white;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Ensure custom cursor never flickers */
+.fixed {
+  will-change: transform;
+}

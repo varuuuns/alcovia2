@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CustomCursor() {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [isVisible, setIsVisible] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+    const [isDarkSection, setIsDarkSection] = useState(true);
 
+    // Track mouse position and visibility
     useEffect(() => {
         const updateMousePosition = (e) => {
             setMousePosition({ x: e.clientX, y: e.clientY });
@@ -14,61 +17,135 @@ export default function CustomCursor() {
         const handleMouseLeave = () => setIsVisible(false);
         const handleMouseEnter = () => setIsVisible(true);
 
-        window.addEventListener('mousemove', updateMousePosition);
-        document.addEventListener('mouseleave', handleMouseLeave);
-        document.addEventListener('mouseenter', handleMouseEnter);
+        window.addEventListener("mousemove", updateMousePosition);
+        document.addEventListener("mouseleave", handleMouseLeave);
+        document.addEventListener("mouseenter", handleMouseEnter);
+
+        // Detect clickable elements for hover grow effect
+        const clickableEls = document.querySelectorAll("a, button, [role='button']");
+        clickableEls.forEach((el) => {
+            el.addEventListener("mouseenter", () => setIsHovering(true));
+            el.addEventListener("mouseleave", () => setIsHovering(false));
+        });
 
         return () => {
-            window.removeEventListener('mousemove', updateMousePosition);
-            document.removeEventListener('mouseleave', handleMouseLeave);
-            document.removeEventListener('mouseenter', handleMouseEnter);
+            window.removeEventListener("mousemove", updateMousePosition);
+            document.removeEventListener("mouseleave", handleMouseLeave);
+            document.removeEventListener("mouseenter", handleMouseEnter);
+            clickableEls.forEach((el) => {
+                el.removeEventListener("mouseenter", () => setIsHovering(true));
+                el.removeEventListener("mouseleave", () => setIsHovering(false));
+            });
         };
     }, []);
 
+    // Optional: Detect background brightness for auto contrast
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const bg = window.getComputedStyle(entry.target).backgroundColor;
+                    const rgb = bg.match(/\d+/g);
+                    if (rgb) {
+                        const brightness =
+                            (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+                        setIsDarkSection(brightness < 0.5);
+                    }
+                });
+            },
+            { threshold: 0.5 }
+        );
+
+        document.querySelectorAll("section").forEach((sec) => observer.observe(sec));
+        return () => observer.disconnect();
+    }, []);
+
+    const primaryColor = "#CDFE04";
+    const secondaryColor = isDarkSection ? "#CDFE04" : "#111";
+
     return (
-        <motion.div
-            className="fixed pointer-events-none z-9999 hidden md:block"
-            animate={{
-                x: mousePosition.x - 30,
-                y: mousePosition.y - 30,
-                opacity: isVisible ? 1 : 0
-            }}
-            transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 28,
-                mass: 0.5
-            }}
-        >
-            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <motion.path
-                    d="M10 30 Q5 20 15 15 Q25 10 30 20 Q25 25 20 28 Q15 30 10 30Z"
-                    fill="#CDFE04"
-                    opacity="0.9"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.path
-                    d="M8 35 Q3 28 10 22 Q18 18 22 26 Q18 30 14 32 Q10 34 8 35Z"
-                    fill="#CDFE04"
-                    opacity="0.7"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                />
-                <circle cx="35" cy="25" r="8" fill="#1a1a1a" stroke="#CDFE04" strokeWidth="1.5" />
-                <ellipse cx="35" cy="42" rx="10" ry="12" fill="#1a1a1a" stroke="#CDFE04" strokeWidth="1.5" />
-                <motion.circle
-                    cx="35"
-                    cy="25"
-                    r={12}
-                    fill="none"
-                    stroke="#CDFE04"
-                    strokeWidth="0.5"
-                    opacity="0.5"
-                    animate={{ r: [12, 15, 12], opacity: [0.5, 0.2, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                />
-            </svg>
-        </motion.div>
+        <AnimatePresence>
+            {isVisible && (
+                <motion.div
+                    className="fixed pointer-events-none z-9999 hidden md:flex items-center justify-center"
+                    animate={{
+                        x: mousePosition.x - 20,
+                        y: mousePosition.y - 20,
+                        scale: isHovering ? 1.6 : 1,
+                        opacity: 1,
+                    }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 30,
+                        mass: 0.6,
+                    }}
+                    style={{
+                        width: 40,
+                        height: 40,
+                        mixBlendMode: isDarkSection ? "difference" : "normal",
+                    }}
+                >
+                    {/* Glowing outer ring */}
+                    <motion.div
+                        className="absolute rounded-full"
+                        animate={{
+                            scale: isHovering ? [1.4, 1.6, 1.4] : [1, 1.1, 1],
+                            opacity: isHovering ? [0.4, 0.8, 0.4] : [0.2, 0.4, 0.2],
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                        }}
+                        style={{
+                            width: 60,
+                            height: 60,
+                            backgroundColor: secondaryColor,
+                            filter: `blur(15px)`,
+                        }}
+                    />
+
+                    {/* Inner core */}
+                    <motion.div
+                        className="rounded-full border-2"
+                        animate={{
+                            scale: isHovering ? 1.2 : 1,
+                            rotate: isHovering ? 45 : 0,
+                        }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        style={{
+                            width: 24,
+                            height: 24,
+                            borderColor: secondaryColor,
+                            backgroundColor: isDarkSection ? "transparent" : "#CDFE04",
+                            boxShadow: isDarkSection
+                                ? `0 0 10px ${primaryColor}, inset 0 0 10px ${primaryColor}`
+                                : `0 0 8px rgba(0,0,0,0.2)`,
+                        }}
+                    />
+
+                    {/* Center dot */}
+                    <motion.div
+                        className="absolute rounded-full"
+                        animate={{
+                            scale: isHovering ? [1, 1.3, 1] : [1, 1.1, 1],
+                        }}
+                        transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                        }}
+                        style={{
+                            width: 6,
+                            height: 6,
+                            backgroundColor: secondaryColor,
+                            boxShadow: `0 0 5px ${secondaryColor}`,
+                        }}
+                    />
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
